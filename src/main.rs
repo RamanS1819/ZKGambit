@@ -1,13 +1,13 @@
 mod verifier;
 mod zkp;
+mod pyth_integration;
 
 use std::io;
-use rand::rngs::OsRng;
-use rand::RngCore;
 use colored::*;
 
-fn main() {
-    println!("Guessing Game!!!!\n");
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    println!("Guessing Game With ZK proofs and Pyth random number !!!!\n");
 
 
     println!("Enter the amount: ");
@@ -20,9 +20,8 @@ fn main() {
     let x: u32 = x.trim().parse().expect("Please type a number!");
 
 
-
-    let mut rng = OsRng;
-    let secret_number = (rng.next_u32() % 5) + 1;
+    // Get random nymber from Pyth
+    let secret_number = pyth_integration::get_pyth_random_number().await?;
     
     //Set up the ZKP System
     let (params, pvk) = zkp::setup();
@@ -71,7 +70,6 @@ fn main() {
         else {
             println!("{}", "Oops!! You guessed it wrong".red());
         }
-
     }
 
      // Ask user if they want to verify the game
@@ -87,5 +85,7 @@ fn main() {
     else {
         println!("Verification skipped.");
     }
+
+    Ok(())
 
 }

@@ -63,7 +63,6 @@ pub fn create_proof(
     secret: u32,
     guess: u32,
 ) -> groth16::Proof<Bls12> {
-
     let c = NumberMatchCircuit {
         secret: Some(secret),
         guess: Some(guess),
