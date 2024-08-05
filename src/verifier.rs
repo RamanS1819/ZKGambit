@@ -1,22 +1,30 @@
-use sha2::{Sha256, Digest};
+use crate::zkp;
+use bellman::groth16;
+use bls12_381::Bls12;
+use colored::*;
 
-pub fn verify(secret_number: u32, nonce: u32, salt: u32, secret_number_hash: &str){
+pub fn verify(
+    params: &groth16::Parameters<Bls12>,
+    pvk: &groth16::PreparedVerifyingKey<Bls12>,
+    secret_number: u32
+){
     println!("\nVerification:");
-    println!("Secret number: {}", secret_number);
-    println!("Nonce: {}", nonce);
-    println!("Salt: {}", salt);
-    println!("Hash of secret number (SHA-256): {}", secret_number_hash);
+    println!("Verifying the integrity of the game using ZK proof...");
 
-    let verification_str = format!("{}{}{}", secret_number, nonce, salt);
-    let mut verification_hasher = Sha256::new();
-    verification_hasher.update(verification_str.as_bytes());
-    let verification_result = verification_hasher.finalize();
-    let verification_hash = hex::encode(verification_result);
+    // create a proof with actual secret number
+    let verification_proof = zkp::create_proof(params, secret_number, secret_number);
 
-    if verification_hash == secret_number_hash {
-        println!("Verification successful! The hash matches.");
-    } 
-    else {
-        println!("Verification failed! The hash does not match.");
+    // verify the proof
+    let is_valid = zkp::verify_proof(&pvk, &verification_proof);
+
+    if is_valid {
+        println!("{}", "Verification successful!".green());
+        println!("The game was fair. The secret number exists and the ZKP system is working correctly.");
+        println!("Note: The actual secret number was never revealed during this process.");
+    }
+    else{
+        println!("{}", "Verification failed!".red());
+        println!("The game was not fair. The secret number does not exist or the ZKP system is not working correctly.");
+        println!("There might be an issue with the ZKP system or the game's integrity.");
     }
 }
