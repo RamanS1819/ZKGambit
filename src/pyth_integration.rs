@@ -4,7 +4,7 @@ use solana_sdk::pubkey::Pubkey;
 use pyth_sdk_solana::PriceFeed;
 use solana_sdk::account_info::AccountInfo;
 
-pub async fn get_pyth_random_number() -> Result<u32, Box<dyn std::error::Error>> {
+pub async fn get_pyth_random_number(range: u32) -> Result<u32, Box<dyn std::error::Error>> {
     let client = RpcClient::new("https://api.devnet.solana.com".to_string());
 
     // Pyth price account for SOL/USD on devnet
@@ -36,5 +36,5 @@ pub async fn get_pyth_random_number() -> Result<u32, Box<dyn std::error::Error>>
                     + current_price.publish_time as u64;
     
     // Generate a number between 1 and 5
-    Ok(((random_seed % 5) + 1) as u32)
+    Ok(((random_seed % range as u64) + 1) as u32)
 }
