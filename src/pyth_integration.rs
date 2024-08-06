@@ -27,14 +27,12 @@ pub async fn get_pyth_random_number(range: u32) -> Result<u32, Box<dyn std::erro
     let price_feed: PriceFeed = pyth_sdk_solana::load_price_feed_from_account_info(&account_info)?;
     let current_price = price_feed.get_price_unchecked();
 
-    // Use the confidence interval as a source of randomness
-    // let random_seed = current_price.conf as u32;
 
     // Use multiple fields for better randomness
     let random_seed = current_price.price.abs() as u64 
                     + current_price.conf as u64 
                     + current_price.publish_time as u64;
     
-    // Generate a number between 1 and 5
+    // Generate a random number
     Ok(((random_seed % range as u64) + 1) as u32)
 }
