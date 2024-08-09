@@ -29,10 +29,22 @@ pub async fn get_pyth_random_number(range: u32) -> Result<u32, Box<dyn std::erro
 
 
     // Use multiple fields for better randomness
-    let random_seed = current_price.price.abs() as u64 
+    let mut random_seed = current_price.price.abs() as u64 
                     + current_price.conf as u64 
                     + current_price.publish_time as u64;
     
+    // Generate a random number using rejection sampling
+    let range_u64 = range as u64;
+    let max_valid = u64::MAX - (u64::MAX % range_u64);
+    
+    loop {
+        if random_seed < max_valid {
+            return Ok(((random_seed % range_u64) + 1) as u32);
+        }
+        // If we're here, we need to generate a new random seed
+        random_seed = random_seed.wrapping_mul(1103515245).wrapping_add(12345);
+
+    }
     // Generate a random number
-    Ok(((random_seed % range as u64) + 1) as u32)
+    // Ok(((random_seed % range as u64) + 1) as u32)
 }

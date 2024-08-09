@@ -1,15 +1,17 @@
-use crate::{leaderboard::Leaderboard, pyth_integration, zkp, verifier};
+use crate::{leaderboard::Leaderboard, pyth_integration, zkp, verifier, token_economics::TokenEconomics};
 use std::io;
 use std::time::Instant;
 use colored::*;
 
-pub async fn game(leaderboard: &mut Leaderboard) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn game(leaderboard: &mut Leaderboard, token_economics: &mut TokenEconomics) -> Result<(), Box<dyn std::error::Error>> {
     println!("Enter your name:");
     let mut name = String::new();
     io::stdin()
         .read_line(&mut name)
         .expect("Failed to read line");
     let name = name.trim().to_string();
+
+    token_economics.add_new_player(&name);
 
     println!("Choose Difficulty:");
     println!("1. Easy (1-5)");
@@ -33,14 +35,22 @@ pub async fn game(leaderboard: &mut Leaderboard) -> Result<(), Box<dyn std::erro
     };
 
 
-    println!("Enter the amount: ");
+    println!("Enter the amount of token to bet: ");
 
     let mut x = String::new();
     io::stdin()
         .read_line(&mut x)
         .expect("Failed to read line");
 
-    let x: u32 = x.trim().parse().expect("Please type a number!");
+    let x: u64 = x.trim().parse().expect("Please type a number!");
+
+    if token_economics.get_balance(&name) < x {
+        println!("Insufficient balance. Current balance: {}", token_economics.get_balance(&name));
+        return Ok(());
+    }
+
+    //Deduct the bet amount from the player's balance
+    token_economics.transfer(&name, "house", x)?;
 
     // Get random number from Pyth
     let secret_number = pyth_integration::get_pyth_random_number(range).await?;
@@ -57,8 +67,6 @@ pub async fn game(leaderboard: &mut Leaderboard) -> Result<(), Box<dyn std::erro
         println!("{}", format!("Attempts left: {}", attempts_left).yellow());
         println!("{}", format!("Guess the number between 1 and {}!", range).blue());
 
-
-        // println!("{}", "Guess the number!".blue());
 
         let mut guess_number = String::new();
         io::stdin()
@@ -78,7 +86,12 @@ pub async fn game(leaderboard: &mut Leaderboard) -> Result<(), Box<dyn std::erro
 
         if is_correct {
             println!("{}", "Hurray!! You guessed it correct".green());
-            println!("Here is your won prize: {}", x*2);
+            let winnings: u64 = x*2;
+            println!("You won {} tokens!", winnings);
+            match token_economics.house_transfer(&name, winnings) {
+                Ok(_) => println!("Tokens transferred successfully to your account"),
+                Err(e) => println!("Error transferring tokens: {}", e),
+            }
             let duration = start_time.elapsed();
             println!("Time taken: {:?}", duration);
             leaderboard.add_score(name, duration.as_secs() as u32);
@@ -90,6 +103,7 @@ pub async fn game(leaderboard: &mut Leaderboard) -> Result<(), Box<dyn std::erro
         attempts_left -= 1;
         if attempts_left == 0 {
             println!("You've used all your attempts!");
+            println!("You lost {} tokens.", x);
             break;
         }
     }

@@ -1,10 +1,10 @@
-use crate::{leaderboard::Leaderboard, pyth_integration, zkp, verifier};
+use crate::{leaderboard::Leaderboard, pyth_integration, zkp, verifier, token_economics::TokenEconomics};
 use std::io;
 use std::time::Instant;
 use std::collections::HashMap;
 use colored::*;
 
-pub async fn game(leaderboard: &mut Leaderboard) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn game(leaderboard: &mut Leaderboard, token_economics: &mut TokenEconomics) -> Result<(), Box<dyn std::error::Error>> {
     println!("Enter the number of players: ");
     let mut num_players = String::new();
     io::stdin()
@@ -25,15 +25,22 @@ pub async fn game(leaderboard: &mut Leaderboard) -> Result<(), Box<dyn std::erro
             .expect("Failed to read line");
         let name = name.trim().to_string();
 
+        token_economics.add_new_player(&name);
+
 
         println!("{}, Enter your bet amount: ", name);
         let mut bet = String::new();
         io::stdin()
             .read_line(&mut bet)
             .expect("Failed to read line");
-        let bet: u32 = bet.trim().parse().expect("Please type a number!");
+        let bet: u64 = bet.trim().parse().expect("Please type a number!");
 
+        if token_economics.get_balance(&name) < bet {
+            println!("Insufficient balance. Current balance: {}", token_economics.get_balance(&name));
+            return Ok(());
+        }
 
+        token_economics.transfer(&name, "house", bet)?;
         total_pool += bet;
         players.insert(name, (0, bet));   //(guess, bet)
     }
@@ -91,7 +98,7 @@ pub async fn game(leaderboard: &mut Leaderboard) -> Result<(), Box<dyn std::erro
 
         if is_correct {
             println!("{}", format!("{} guessed it correct", name).green());
-            winners.push(name);
+            winners.push(name.clone());
         } else {
             println!("{}", format!("{} guessed it wrong", name).red());
         }
@@ -103,10 +110,20 @@ pub async fn game(leaderboard: &mut Leaderboard) -> Result<(), Box<dyn std::erro
     if winners.is_empty() {
         println!("No one guessed it correctly. The house wins!");
     } else {
-        let prize = total_pool / winners.len() as u32;
+        let prize = total_pool / winners.len() as u64;
         for winner in winners {
-            println!("{} won {}!", winner, prize);
+            println!("{} won {} token!", winner, prize);
             leaderboard.add_score(winner.to_string(), duration.as_secs() as u32);
+        }
+    }
+
+    // Staking benefits
+    for (player, _) in players.iter() {
+        let staked_amount = token_economics.get_staked_amount(player);
+        if staked_amount > 0 {
+            let staking_reward = token_economics.calculate_staking_reward(player);
+            println!("{} earned {} tokens as staking reward", player, staking_reward);
+            token_economics.house_transfer(player, staking_reward)?;
         }
     }
 
