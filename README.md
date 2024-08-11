@@ -7,6 +7,7 @@ https://github.com/RamanS1819/ZKGambit_thirdweb
 
 About this project and how it is processing and using the Thirdweb and Pyth Oracle and description about the tech used:
 
+
 Zero-Knowledge Proofs (zk-SNARKs):
 
 zk-SNARKs (Zero-Knowledge Succinct Non-Interactive Argument of Knowledge) are a form of cryptographic proof that allows one party (the prover) to prove to another party (the verifier) that a statement is true, without revealing any information beyond the validity of the statement itself.
@@ -22,6 +23,7 @@ b) Generating a proving key and a verification key.
 c) Creating a proof using the secret inputs (secret number and guess).
 d) Verifying the proof using the verification key and public inputs.
 This ensures that the game can prove it's operating correctly without revealing the secret number or the user's guess, maintaining both fairness and privacy.
+
 
 Pyth On-chain Oracle:
 
@@ -40,6 +42,7 @@ Verifiable: Anyone can check how it was generated.
 Fair: It's not controlled by the game operators.
 
 
+
 Thirdweb Integration:
 
 Thirdweb is a development framework for building web3 applications. Its integration in this project focuses on wallet connectivity:
@@ -47,6 +50,8 @@ a) Wallet Connection: Thirdweb provides a simple API to connect various types of
 b) Authentication: Once connected, the wallet address serves as the user's identity in the game.
 c) Transaction Signing: If the game involves on-chain transactions (e.g., placing bets or claiming winnings), Thirdweb can facilitate the signing and sending of these transactions.
 d) State Management: Thirdweb might also be used to manage the user's game state, including their balance and game history.
+
+
 
 Rust Implementation:
 
@@ -70,6 +75,8 @@ d) Blockchain Interaction:
 Libraries like web3-rs could be used for any direct blockchain interactions.
 
 
+
+
 Game Flow in Detail:
 
 a) User logs in by connecting their wallet through Thirdweb.
@@ -82,16 +89,17 @@ g) The proof is verified to determine the game outcome.
 h) The user is informed of the result.
 i) The user can optionally verify the game's integrity by checking the zk-SNARK proof.
 
-Security Considerations:
 
+
+Security Considerations:
 
 Timing Attacks: Ensure that the time taken to generate and verify proofs doesn't leak information about the secret number.
 Front-running: If bets are placed on-chain, measures should be taken to prevent miners from exploiting advance knowledge of transactions.
 Oracle Security: The system should be resilient to temporary Pyth oracle outages or manipulated data.
 
 
-Scalability and Performance:
 
+Scalability and Performance:
 
 zk-SNARK proof generation can be computationally intensive. The system might need to optimize this process for real-time gaming.
 Consider using a layer-2 solution if on-chain transactions are involved, to reduce costs and increase speed.
